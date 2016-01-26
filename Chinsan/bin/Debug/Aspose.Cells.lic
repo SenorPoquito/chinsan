@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<License>
+  <Data>
+    <LicensedTo>IREP Co. Ltd</LicensedTo>
+    <LicenseType>Developer Small Business</LicenseType>
+    <LicenseNote>Limited to 1 developer.</LicenseNote>
+    <OrderID>140217214555</OrderID>
+    <OEM>This is not a redistributable license</OEM>
+    <Products>
+      <Product>Aspose.Cells for .NET</Product>
+    </Products>
+    <EditionType>Enterprise</EditionType>
+    <SerialNumber>9d04d0eb-4c64-454d-8778-c03a56f34317</SerialNumber>
+    <SubscriptionExpiry>20150221</SubscriptionExpiry>
+    <LicenseVersion>2.2</LicenseVersion>
+  </Data>
+  <Signature>zHUmvqsJxN865u1o8G5c0w8T24ok5HAuCMKmegrVH8GplnAdGsZrdeszfsyJC1rLujtLKUupxIkho2up6OLxvyGzQxfF4CiH2R5Pj4axbenZQtLLMxp0VbhzgLTfhv8NzmeEUeEplkr9KkNuVPWGmhCAQYmrzcDTwyNqXVWnG8A=</Signature>
+</License>
