@@ -5,3 +5,9 @@ C:\dev\Visual Studio\Visual Studio 2010\Projects\Chinsan\Chinsan\obj\x86\Debug\C
 C:\dev\Visual Studio\Visual Studio 2010\Projects\Chinsan\Chinsan\obj\x86\Debug\Chinsan.csproj.ResolveComReference.cache
 C:\dev\Visual Studio\Visual Studio 2010\Projects\Chinsan\Chinsan\bin\Debug\Aspose.Cells.dll
 C:\dev\Visual Studio\Visual Studio 2010\Projects\Chinsan\Chinsan\obj\x86\Debug\Chinsan.csprojResolveAssemblyReference.cache
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\obj\x86\Debug\Chinsan.csprojResolveAssemblyReference.cache
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\obj\x86\Debug\Chinsan.exe
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\obj\x86\Debug\Chinsan.pdb
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\bin\Debug\Chinsan.exe
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\bin\Debug\Chinsan.pdb
+C:\Users\yassi\Source\Repos\chinsan\Chinsan\bin\Debug\Aspose.Cells.dll

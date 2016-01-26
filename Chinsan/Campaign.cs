@@ -12,7 +12,8 @@ namespace Chinsan
         public ReportEntry yahooGeneral;
         public ReportEntry googleBranding;
         public ReportEntry googleGeneral;
-
+        public DateTime reportStartDate;
+        public DateTime reportEndDate;
         public Campaign(String campaign) {
             this.campaign = campaign;
         this.yahooBranding = new ReportEntry("Yahoo","社名");

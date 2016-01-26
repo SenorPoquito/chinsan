@@ -54,31 +54,19 @@ namespace Chinsan
 
                 foreach (String file in inputFiles)
                 {
-                    if (file.Contains("Yahoo"))
-                    {
-                        if (file.Contains("CV"))
+
+                    if (file.Contains("CV"))
                         {
-                            Utilities.parseYahooCVReport(file, currentCampaign);
+                            Utilities.parseCVReport(file, currentCampaign);
                         }
                         else
                         {
-                            Utilities.parseYahooCampaignReport(file, currentCampaign);
-                        }
-                    }
-                    else 
-                    {
-                        if (file.Contains("CV"))
-                        {
-                            Utilities.parseGoogleCVReport(file, currentCampaign);
-                        }
-                        else
-                        {
-                            Utilities.parseGoogleCampaignReport(file, currentCampaign);
-                        }
-                    }
-                    
+                            Utilities.parseCampaignReport(file, currentCampaign);
+                       }
+
+                       
                 }
-                
+
             }
 
             Utilities.writeReport(campaigns);

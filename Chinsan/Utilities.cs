@@ -12,33 +12,28 @@ namespace Chinsan
     {
         public static DateTime dateStart = new DateTime();
         public static DateTime dateEnd = new DateTime();
-        private const int YCR_CAMPAIGN_NAME = 0;
-        private const int YCR_CAMPAIGN_TYPE = 1;
-        private const int YCR_IMPRESSIONS = 2;
-        private const int YCR_CLICKS = 3;
-        private const int YCR_CTR = 4;
-        private const int YCR_AVG_RANK = 5;
-        private const int YCR_COST = 6;
-        private const int YCR_AVG_CPC = 7;
-        private const int YCR_COST_PER_UNIQUE_CV = 8;
-        private const int YCR_UNIQUE_CV = 9;
-        private const int YCR_UNIQUE_CVR = 10;
 
-        private const int YCV_CV_NAME = 0;
-        private const int YCV_CVs = 3;
-        private const int YCV_CAMPAIGN_NAME = 1;
+        private const String YCR_CAMPAIGN_NAME = "キャンペーン名";
+        private const String YCR_IMPRESSIONS = "インプレッション数";
+        private const String YCR_CLICKS = "クリック数";
+        private const String YCR_AVG_RANK = "平均掲載順位";
+        private const String YCR_COST = "コスト";
+        private const String YCR_UNIQUE_CV = "ユニークコンバージョン数";
 
-        private const int GCR_CAMPAIGN_NAME = 1;
-        private const int GCR_AVG_RANK = 4;
-        private const int GCR_IMPRESSIONS = 5;
-        private const int GCR_CLICKS = 6;
-        private const int GCR_COST = 9;
-        private const int GCR_UNIQUE_CVs = 11; 
+        private const String YCV_CV_NAME = "コンバージョン名";
+        private const String YCV_CVs = "ユニークコンバージョン数";
+        private const String YCV_CAMPAIGN_NAME = "キャンペーン名";
 
-        private const int GCV_CV_NAME = 0;
-        private const int GCV_CVs = 5;
-        //private const int GCV_UNIQUE_CVs = 5;
-        private const int GCV_CAMPAIGN_NAME = 2;
+        private const String GCR_CAMPAIGN_NAME = "キャンペーン";
+        private const String GCR_AVG_RANK = "平均掲載順位";
+        private const String GCR_IMPRESSIONS = "表示回数";
+        private const String GCR_CLICKS = "クリック数";
+        private const String GCR_COST = "費用";
+        private const String GCR_UNIQUE_CVs = "コンバージョンに至ったクリック";
+
+        private const String GCV_CV_NAME = "コンバージョン名";
+        private const String GCV_CVs = "コンバージョン";
+        private const String GCV_CAMPAIGN_NAME = "キャンペーン";
 
         private const String OP_DATE = "B7";
         private const String OP_AVG_RANK = "D";
@@ -61,15 +56,37 @@ namespace Chinsan
         private const String OP_TOTAL_BRANDING_ROW = "10";
         private const String OP_TOTAL_GENERAL_ROW = "11";
 
-        public static void parseYahooCVReport(String path, Campaign campaign)
+
+        private static int cprColumnCampaign = 0;
+        private static int cprColumnImpressions = 0;
+        private static int cprColumnClicks = 0;
+        private static int cprColumnAvgRank = 0;
+        private static int cprColumnCost = 0;
+        private static int cprColumnUniqueCV = 0;
+        private static int cvrColumnCV = 0;
+        private static int cvrColumnCampaign = 0;
+        private static int cvrColumnConverstionType = 0;
+
+
+        public static void parseCVReport(String path, Campaign campaign)
         {
 
             TextFieldParser parser = new TextFieldParser(path, Encoding.GetEncoding("shift_jis"));
             parser.TextFieldType = FieldType.Delimited;
-            parser.SetDelimiters(",");
+            parser.SetDelimiters(new String[] { ",", "\t" });
 
+            Boolean google = false;
             Boolean ready = false;
+            int row = 0;
 
+            if (path.Contains("Yahoo"))
+            {
+                google = false;
+            }
+            else {
+                google = true;
+            }
+           
             while (!parser.EndOfData)
             {
                 //Process row
@@ -77,69 +94,107 @@ namespace Chinsan
                 Boolean branding = false;
                 Boolean document = false;
                 string[] fields = parser.ReadFields();
+
+                
+
                 foreach (string field in fields)
                 {
-                    if (field.Contains("売上/総コンバージョン数"))
+                    if (!ready)
                     {
-                        ready = true;
+                        if (field.Equals(YCV_CAMPAIGN_NAME) || field.Equals(GCV_CAMPAIGN_NAME))
+                        {
+                            cvrColumnCampaign = column;
+                        }
+                        if (field.Equals(YCV_CVs) || field.Equals(GCV_CVs))
+                        {
+                            cvrColumnCV = column;
+                        }
+                        if (field.Equals(YCV_CV_NAME) || field.Equals(GCV_CV_NAME))
+                        {
+                            cvrColumnConverstionType = column;
+                        }
+
+                        if (row > 5 || (google && row>2))
+                        {
+                            ready = true;
+                        }
                     }
 
                     if (ready)
                     {
-                        switch (column)
+
+                        if (column == cvrColumnConverstionType && field.Contains("資料"))
                         {
-                            case YCV_CV_NAME:
-                                if (field.Contains("資料"))
-                                {
-                                    document = true;
-                                }
+                                document = true;
+                        }
 
-                                break;
-                                
+                        if (column == cvrColumnCampaign)
+                        {
+                            if (field.Contains("社名"))
+                            {
+                                branding = true;
+                            }
+                            if (field.Contains("--"))
+                            {
+                                return;
+                            }
+                        }
 
-                            case YCV_CAMPAIGN_NAME:
-                                if (field.Contains("社名"))
+                        if (column == cvrColumnCV)
+                        {
+                            if (branding)
+                            {
+                                if (document)
                                 {
-                                    branding = true;
-                                }
-                                if (field.Contains("--"))
-                                {
-                                    return;
-                                }
-                                break;
-
-                            case YCV_CVs:
-
-                                if (branding)
-                                {
-                                    if (document)
+                                    if (google)
                                     {
+                                        campaign.googleBranding.conversionBrochure += Convert.ToDouble(field);
+                                    }
+                                    else {
                                         campaign.yahooBranding.conversionBrochure += Convert.ToDouble(field);
                                     }
-                                    else 
+                                }
+                                else
+                                {
+                                    if (google)
                                     {
+                                        campaign.googleBranding.conversionBooking += Convert.ToDouble(field);
+                                    }
+                                    else {
                                         campaign.yahooBranding.conversionBooking += Convert.ToDouble(field);
                                     }
                                 }
-                                else 
+                            }
+                            else
+                            {
+                                if (document)
                                 {
-                                    if (document)
+                                    if (google)
                                     {
+                                        campaign.googleGeneral.conversionBrochure += Convert.ToDouble(field);
+                                    }
+                                    else {
                                         campaign.yahooGeneral.conversionBrochure += Convert.ToDouble(field);
                                     }
-                                    else 
+                                }
+                                else
+                                {
+                                    if (google)
                                     {
+                                        campaign.googleGeneral.conversionBooking += Convert.ToDouble(field);
+                                    }
+                                    else {
                                         campaign.yahooGeneral.conversionBooking += Convert.ToDouble(field);
                                     }
                                 }
-
-                                break;
+                            }
                         }
+
                     }
                     //TODO: Process field
                     column++;
                 }
-
+                row++;
             }
             parser.Close();
 
@@ -147,14 +202,24 @@ namespace Chinsan
         }
 
 
-        public static void parseYahooCampaignReport(String path, Campaign campaign) 
+        public static void parseCampaignReport(String path, Campaign campaign)
         {
 
             TextFieldParser parser = new TextFieldParser(path, Encoding.GetEncoding("shift_jis"));
             parser.TextFieldType = FieldType.Delimited;
-            parser.SetDelimiters(",");
-
+            parser.SetDelimiters(new String[] { ",", "\t" });
+       
             Boolean ready = false;
+            int row = 0;
+            Boolean google = false;
+
+            if (path.Contains("Yahoo"))
+            {
+                google = false;
+            }
+            else {
+                google = true;
+            }
 
             while (!parser.EndOfData)
             {
@@ -162,280 +227,167 @@ namespace Chinsan
                 int column = 0;
                 Boolean branding = false;
                 Double impression = 0.0;
-                string[] fields = parser.ReadFields();
-                    foreach (string field in fields)
-                    {
-                        if(field.Contains("ユニークコンバージョン率")){
-                            ready=true;
-                        }
-
-                        if (ready)
-                        {
-                            switch(column){
-                                case YCR_CAMPAIGN_NAME:
-                                    if (field.Contains("社名")) {
-                                        branding = true;
-                                    }
-                                    if (field.Contains("--")) {
-                                        return;
-                                    }
-                                    break;
-                                case YCR_AVG_RANK:
-                                      if (branding)
-                                    {
-                                        campaign.yahooBranding.weightedRank += Convert.ToDouble(field) * impression;
-                                    }
-                                    else
-                                    {
-                                        campaign.yahooGeneral.weightedRank += Convert.ToDouble(field) * impression;
-                                    }
-                                    break;
-                                    
-                                    break;
-                               
-                                case YCR_IMPRESSIONS:
-                                    impression = Convert.ToDouble(field);
-                                    if (branding)
-                                    {
-                                        
-                                        campaign.yahooBranding.impressions += Convert.ToDouble(field);
-                                    }
-                                    else {
-                                        
-                                        campaign.yahooGeneral.impressions += Convert.ToDouble(field);
-                                    }
-                                    break;
-                                case YCR_CLICKS:
-                                    if (branding)
-                                    {
-                                        campaign.yahooBranding.clickThroughs += Convert.ToDouble(field);
-                                    }
-                                    else
-                                    {
-                                        campaign.yahooGeneral.clickThroughs += Convert.ToDouble(field);
-                                    }
-                                    break;
-                                case YCR_COST:
-                                    if (branding)
-                                    {
-                                        campaign.yahooBranding.cost += Convert.ToDouble(field);
-                                    }
-                                    else
-                                    {
-                                        campaign.yahooGeneral.cost += Convert.ToDouble(field);
-                                    }
-                                    break;
-
-                                case YCR_UNIQUE_CV:
-                                    if (branding)
-                                    {
-                                        campaign.yahooBranding.conversionUnique += Convert.ToDouble(field);
-                                    }
-                                    else
-                                    {
-                                        campaign.yahooGeneral.conversionUnique += Convert.ToDouble(field);
-                                    }
-                                    break;
-
-                            }
-                        }
-                        //TODO: Process field
-                        column++;
-                    }
-                
-            }
-            parser.Close();
-
-            return;
-        }
-
-
-        public static void parseGoogleCampaignReport(String path, Campaign campaign)
-        {
-
-            TextFieldParser parser = new TextFieldParser(path, Encoding.GetEncoding("shift_jis"));
-            parser.TextFieldType = FieldType.Delimited;
-            parser.SetDelimiters("\t");
-
-            Boolean ready = false;
-
-            while (!parser.EndOfData)
-            {
-                //Process row
-                int column = 0;
-                Boolean branding = false;
-                Double avgRank = 0.0;
+                Double averageRank = 0.0;
                 string[] fields = parser.ReadFields();
                 foreach (string field in fields)
                 {
-                    if (field.Contains("キャンペーン レポート")) {
-                        String [] dateSegment = field.Split(' ')[2].Split('(')[1].Split(')')[0].Split('-');
-                        dateStart = Convert.ToDateTime(dateSegment[0]);
-                        dateEnd = Convert.ToDateTime(dateSegment[1]);
-
-                        Console.WriteLine(dateSegment);
-
-
+                  
+                    if (field.Equals(YCR_AVG_RANK) || field.Equals(GCR_AVG_RANK))
+                    {
+                        cprColumnAvgRank = column;
                     }
-                    if (field.Contains("すべてのコンバージョン"))
+                    if (field.Equals(YCR_CAMPAIGN_NAME) || field.Equals(GCR_CAMPAIGN_NAME))
+                    {
+                        cprColumnCampaign = column;
+                    }
+                    if (field.Equals(YCR_CLICKS) || field.Equals(GCR_CLICKS))
+                    {
+                        cprColumnClicks = column;
+                    }
+                    if (field.Equals(YCR_COST) || field.Equals(GCR_COST))
+                    {
+                        cprColumnCost = column;
+                    }
+                    if (field.Equals(YCR_IMPRESSIONS) || field.Equals(GCR_IMPRESSIONS))
+                    {
+                        cprColumnImpressions = column;
+                    }
+                    if (field.Equals(YCR_UNIQUE_CV) || field.Equals(GCR_UNIQUE_CVs))
+                    {
+                        cprColumnUniqueCV = column;
+                    }
+
+                    if (field.Equals("ユニークコンバージョン率") || field.Equals("すべてのコンバージョン"))
                     {
                         ready = true;
                     }
 
                     if (ready)
                     {
-                        if (field.Contains("--"))
+                        if (column == cprColumnAvgRank)
                         {
-                            return;
+                            averageRank = Convert.ToDouble(field);
                         }
-                        switch (column)
+
+                        if (column == cprColumnImpressions)
                         {
-                            case GCR_CAMPAIGN_NAME:
-                                if (field.Contains("社名"))
-                                {
-                                    branding = true;
-                                }
-                              
-                                break;
-                            case GCR_AVG_RANK:
-                                avgRank = Convert.ToDouble(field);
-                                break;
-                            case GCR_IMPRESSIONS:
-                                if (branding)
-                                {
-                                    campaign.googleBranding.weightedRank += avgRank * Convert.ToDouble(field);
-                                    campaign.googleBranding.impressions += Convert.ToDouble(field);
-                                }
-                                else
-                                {
-                                    campaign.googleGeneral.weightedRank += avgRank * Convert.ToDouble(field);
-                                    campaign.googleGeneral.impressions += Convert.ToDouble(field);
-                                }
-                                break;
-                            case GCR_CLICKS:
-                                if (branding)
+                            impression = Convert.ToDouble(field);
+                        }
+
+                        if (column == cprColumnCampaign)
+                        {
+                            if (field.Contains("社名"))
+                            {
+                                branding = true;
+                            }
+                            if (field.Contains("--"))
+                            {
+                                return;
+                            }
+                        }
+                        if (column == cprColumnClicks)
+                        {
+                            if (branding)
+                            {
+                                if (google)
                                 {
                                     campaign.googleBranding.clickThroughs += Convert.ToDouble(field);
                                 }
-                                else
+                                else {
+                                    campaign.yahooBranding.clickThroughs += Convert.ToDouble(field);
+                                }
+
+                                
+                            }
+                            else
+                            {
+                                if (google)
                                 {
                                     campaign.googleGeneral.clickThroughs += Convert.ToDouble(field);
                                 }
-                                break;
-                            case GCR_COST:
-                                if (branding)
+                                else {
+                                    campaign.yahooGeneral.clickThroughs += Convert.ToDouble(field);
+                                }
+                            }
+                        }
+
+                        if (column == cprColumnCost)
+                        {
+                            if (branding)
+                            {
+                                if (google)
                                 {
                                     campaign.googleBranding.cost += Convert.ToDouble(field);
                                 }
-                                else
+                                else {
+                                    campaign.yahooBranding.cost += Convert.ToDouble(field);
+                                }
+                            }
+                            else
+                            {
+                                if (google)
                                 {
                                     campaign.googleGeneral.cost += Convert.ToDouble(field);
                                 }
-                                break;
+                                else {
+                                    campaign.yahooGeneral.cost += Convert.ToDouble(field);
+                                }
+                            }
+                        }
 
-                            case GCR_UNIQUE_CVs:
-                                if (branding)
+                        if (column == cprColumnUniqueCV)
+                        {
+                            if (branding)
+                            {
+                                if (google)
                                 {
                                     campaign.googleBranding.conversionUnique += Convert.ToDouble(field);
                                 }
-                                else
+                                else {
+                                    campaign.yahooBranding.conversionUnique += Convert.ToDouble(field);
+                                }
+                            }
+                            else
+                            {
+                                if (google)
                                 {
                                     campaign.googleGeneral.conversionUnique += Convert.ToDouble(field);
                                 }
-                                break;
-
+                                else {
+                                    campaign.yahooGeneral.conversionUnique += Convert.ToDouble(field);
+                                }
+                            }
                         }
+
+                     
                     }
                     //TODO: Process field
                     column++;
                 }
-
-            }
-            parser.Close();
-
-            return;
-        }
-
-
-        public static void parseGoogleCVReport(String path, Campaign campaign)
-        {
-
-            TextFieldParser parser = new TextFieldParser(path, Encoding.GetEncoding("shift_jis"));
-            parser.TextFieldType = FieldType.Delimited;
-            parser.SetDelimiters("\t");
-
-            Boolean ready = false;
-
-            while (!parser.EndOfData)
-            {
-                //Process row
-                int column = 0;
-                Boolean branding = false;
-                Boolean document = false;
-                string[] fields = parser.ReadFields();
-                foreach (string field in fields)
+                Double weightedRank = averageRank * impression;
+                if (branding)
                 {
-                    if (field.Contains("すべてのコンバージョン"))
+                    if (google)
                     {
-                        ready = true;
+                        campaign.googleBranding.weightedRank += weightedRank;
                     }
-
-                    if (ready)
-                    {
-                        switch (column)
-                        {
-                            case GCV_CV_NAME:
-                                if (field.Contains("資料"))
-                                {
-                                    document = true;
-                                }
-
-                                break;
-
-
-                            case GCV_CAMPAIGN_NAME:
-                                if (field.Contains("社名"))
-                                {
-                                    branding = true;
-                                }
-                                if (field.Contains("--"))
-                                {
-                                    return;
-                                }
-                                break;
-
-                            case GCV_CVs:
-
-                                if (branding)
-                                {
-                                    if (document)
-                                    {
-                                        campaign.googleBranding.conversionBrochure += Convert.ToDouble(field);
-                                    }
-                                    else
-                                    {
-                                        campaign.googleBranding.conversionBooking += Convert.ToDouble(field);
-                                    }
-                                }
-                                else
-                                {
-                                    if (document)
-                                    {
-                                        campaign.googleGeneral.conversionBrochure += Convert.ToDouble(field);
-                                    }
-                                    else
-                                    {
-                                        campaign.googleGeneral.conversionBooking += Convert.ToDouble(field);
-                                    }
-                                }
-
-                                break;
-
-                        }
+                    else {
+                        campaign.yahooBranding.weightedRank+= weightedRank;
                     }
-                    //TODO: Process field
-                    column++;
                 }
+                else
+                {
+                    if (google)
+                    {
+                        campaign.googleGeneral.weightedRank += weightedRank;
+                    }
+                    else {
+                        campaign.yahooGeneral.weightedRank += weightedRank;
+                    }
+                }
+
+
+                row++;
 
             }
             parser.Close();
@@ -444,44 +396,49 @@ namespace Chinsan
         }
 
 
-            
 
-        public static void writeReport(List<Campaign> campaigns) {
+
+
+
+
+
+        public static void writeReport(List<Campaign> campaigns)
+        {
             DateTime reportDate = dateEnd.AddDays(1);
             String reportDateString = reportDate.ToString("yyyMMdd");
-            String reportMonth = reportDate.Year+"年"+reportDate.Month+"月";
-            String filename = reportDateString+"_株式会社一蔵御中_"+reportMonth+"配信レポート.xlsx";
+            String reportMonth = reportDate.Year + "年" + reportDate.Month + "月";
+            String filename = reportDateString + "_株式会社一蔵御中_" + reportMonth + "配信レポート.xlsx";
             Console.WriteLine(filename);
-           
+
             Workbook workbook = new Workbook("..\\..\\input\\template.xlsx");
 
             foreach (Campaign campaign in campaigns)
             {
                 Worksheet activeSheet = workbook.Worksheets[campaign.campaign];
-                
+
                 String selectedRow = OP_GOOGLE_BRANDING_ROW;
                 //GOOGLE BRANDING
                 //Average Rank
                 Cell cell = activeSheet.Cells[OP_AVG_RANK + selectedRow];
                 cell.Value = campaign.googleBranding.weightedRank / campaign.googleBranding.impressions;
                 //Impressions
-                cell = activeSheet.Cells[OP_IMP+selectedRow];
+                cell = activeSheet.Cells[OP_IMP + selectedRow];
                 cell.Value = campaign.googleBranding.impressions;
                 //Clicks
-                cell = activeSheet.Cells[ OP_CTs+selectedRow];
+                cell = activeSheet.Cells[OP_CTs + selectedRow];
                 cell.Value = campaign.googleBranding.clickThroughs;
                 //CTR
-                cell = activeSheet.Cells[ OP_CTR+selectedRow];
-                cell.Value = campaign.googleBranding.clickThroughs/campaign.googleBranding.impressions;
+                cell = activeSheet.Cells[OP_CTR + selectedRow];
+                cell.Value = campaign.googleBranding.clickThroughs / campaign.googleBranding.impressions;
                 //CPC
-                cell = activeSheet.Cells[ OP_CPC+selectedRow];
+                cell = activeSheet.Cells[OP_CPC + selectedRow];
                 cell.Value = campaign.googleBranding.cost / campaign.googleBranding.clickThroughs;
                 //Cost
-                cell = activeSheet.Cells[ OP_COST+selectedRow];
+                cell = activeSheet.Cells[OP_COST + selectedRow];
                 cell.Value = campaign.googleBranding.cost;
                 //Cost+20%
-                cell = activeSheet.Cells[ OP_COST_FEE+selectedRow];
-                cell.Value = campaign.googleBranding.cost*1.20;
+                cell = activeSheet.Cells[OP_COST_FEE + selectedRow];
+                cell.Value = campaign.googleBranding.cost * 1.20;
                 //CV Unique
                 cell = activeSheet.Cells[OP_CV_UNIQUE + selectedRow];
                 cell.Value = campaign.googleBranding.conversionUnique;
@@ -493,7 +450,7 @@ namespace Chinsan
                 cell.Value = campaign.googleBranding.conversionBooking;
                 //CVR Unique
                 cell = activeSheet.Cells[OP_CVR_UNIQUE + selectedRow];
-                cell.Value = campaign.googleBranding.conversionUnique/campaign.googleBranding.clickThroughs;
+                cell.Value = campaign.googleBranding.conversionUnique / campaign.googleBranding.clickThroughs;
                 //CPA Unique
                 cell = activeSheet.Cells[OP_CPA_UNIQUE + selectedRow];
                 cell.Value = campaign.googleBranding.cost / campaign.googleBranding.conversionUnique;
@@ -619,7 +576,7 @@ namespace Chinsan
                 //DATE
 
                 cell = activeSheet.Cells[OP_DATE];
-                cell.Value = "◆Date："+ dateStart.ToString("yyyy/MM/dd")+"-"+ dateEnd.AddDays(1).ToString("yyyy/MM/dd");
+                cell.Value = "◆Date：" + dateStart.ToString("yyyy/MM/dd") + "-" + dateEnd.AddDays(1).ToString("yyyy/MM/dd");
 
             }
 
